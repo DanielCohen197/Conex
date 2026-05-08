@@ -1,6 +1,6 @@
 #pragma once
 // conex.hpp — condition-based binary pattern matching
-// A C++ single-header library for structural binary pattern matching with predicate conditions.
+// A C++ single-header library for structural binary pattern matching with lambda conditions.
 // Usage: conex::match(blob, "(c0)(c1)*(c2)+", cond0, cond1, cond2)
 
 #include <span>
@@ -151,46 +151,108 @@ namespace conex {
 			return true;
 		}
 
-		// Match all tokens starting at cursor; returns true if all tokens matched
+		// Forward declaration
 		inline bool match_tokens(Cursor& cur,
 			const std::vector<Token>& tokens,
 			const std::vector<Condition>& conditions,
-			std::vector<std::vector<Capture>>& captures)
+			std::vector<std::vector<Capture>>& captures,
+			size_t token_index = 0);
+
+		// Greedy match with backtracking: collect as many matches as possible, then
+		// recurse on remaining tokens. If recursion fails, give one back and retry.
+		inline bool match_greedy(Cursor& cur,
+			const std::vector<Token>& tokens,
+			const std::vector<Condition>& conditions,
+			std::vector<std::vector<Capture>>& captures,
+			size_t token_index,
+			size_t min_count)
 		{
-			for (size_t t = 0; t < tokens.size(); ++t) {
-				const Token& tok = tokens[t];
+			const Token& tok = tokens[token_index];
+			const Condition& cond = conditions[tok.condition_index];
 
-				if (tok.condition_index < 0 ||
-					tok.condition_index >= (int)conditions.size())
-					throw std::out_of_range(
-						std::string("conex: no condition provided for c")
-						+ std::to_string(tok.condition_index));
-
-				const Condition& cond = conditions[tok.condition_index];
-				auto& cap_group = captures[t];
-
-				switch (tok.quantifier) {
-				case Quantifier::One:
-					if (!match_one(cur, tok, cond, cap_group))
-						return false;
-					break;
-
-				case Quantifier::ZeroOrOne:
-					match_one(cur, tok, cond, cap_group); // ok to fail
-					break;
-
-				case Quantifier::ZeroOrMore:
-					while (match_one(cur, tok, cond, cap_group)) {}
-					break;
-
-				case Quantifier::OneOrMore:
-					if (!match_one(cur, tok, cond, cap_group))
-						return false;
-					while (match_one(cur, tok, cond, cap_group)) {}
-					break;
-				}
+			// Greedily collect as many matches as possible
+			std::vector<Capture> greedy_caps;
+			Cursor greedy_cur = cur;
+			while (greedy_cur.can_read(tok.width)) {
+				auto s = greedy_cur.peek(tok.width);
+				if (!cond(s)) break;
+				greedy_caps.push_back({ greedy_cur.pos, s });
+				greedy_cur.advance(tok.width);
 			}
-			return true;
+
+			if (greedy_caps.size() < min_count)
+				return false;
+
+			// Try from max down to min, backtracking until remaining tokens match
+			for (size_t count = greedy_caps.size(); ; --count) {
+				Cursor try_cur = cur;
+				try_cur.pos += count * tok.width;
+
+				std::vector<std::vector<Capture>> try_captures = captures;
+				try_captures[token_index].insert(
+					try_captures[token_index].end(),
+					greedy_caps.begin(),
+					greedy_caps.begin() + count
+				);
+
+				if (match_tokens(try_cur, tokens, conditions, try_captures, token_index + 1)) {
+					cur = try_cur;
+					captures = std::move(try_captures);
+					return true;
+				}
+
+				if (count == min_count) break;
+			}
+
+			return false;
+		}
+
+		// Match all tokens starting at token_index; returns true if all tokens matched
+		inline bool match_tokens(Cursor& cur,
+			const std::vector<Token>& tokens,
+			const std::vector<Condition>& conditions,
+			std::vector<std::vector<Capture>>& captures,
+			size_t token_index)
+		{
+			if (token_index >= tokens.size())
+				return true; // all tokens consumed — success
+
+			const Token& tok = tokens[token_index];
+
+			if (tok.condition_index < 0 ||
+				tok.condition_index >= (int)conditions.size())
+				throw std::out_of_range(
+					std::string("conex: no condition provided for c")
+					+ std::to_string(tok.condition_index));
+
+			const Condition& cond = conditions[tok.condition_index];
+
+			switch (tok.quantifier) {
+			case Quantifier::One:
+				if (!match_one(cur, tok, cond, captures[token_index]))
+					return false;
+				return match_tokens(cur, tokens, conditions, captures, token_index + 1);
+
+			case Quantifier::ZeroOrOne: {
+				// Try matching one and recursing; if that fails, skip and recurse
+				Cursor saved = cur;
+				auto saved_caps = captures;
+				if (match_one(cur, tok, cond, captures[token_index]))
+					if (match_tokens(cur, tokens, conditions, captures, token_index + 1))
+						return true;
+				cur = saved;
+				captures = std::move(saved_caps);
+				return match_tokens(cur, tokens, conditions, captures, token_index + 1);
+			}
+
+			case Quantifier::ZeroOrMore:
+				return match_greedy(cur, tokens, conditions, captures, token_index, 0);
+
+			case Quantifier::OneOrMore:
+				return match_greedy(cur, tokens, conditions, captures, token_index, 1);
+			}
+
+			return false;
 		}
 
 	} // namespace detail
