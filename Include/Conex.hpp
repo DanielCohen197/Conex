@@ -49,7 +49,7 @@ namespace conex {
 			Quantifier     quantifier;
 		};
 
-		// Parse a pattern string like "(c0){4}(c1)*(c2)+(c3)?"
+		// Parse a pattern string like "(c0:8)(c1:4)*(c2)+(c3)?"
 		// Condition references: c0, c1, ... cn
 		// Width specifiers:     (c0:8) means 8 bytes, default is 1
 		// Quantifiers:         * + ? or none (exactly one)
@@ -265,7 +265,6 @@ namespace conex {
 	}
 
 	// match: try to match at the start of the given span
-	// to match at an offset, pass blob.subspan(offset)
 	template<typename... Conds>
 	MatchResult match(std::span<const uint8_t> blob,
 		std::string_view pattern,
