@@ -127,7 +127,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Conex.cpp" />
+    <ClCompile Include="Example\ConexExample.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Include\Conex.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
