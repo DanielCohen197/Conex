@@ -1,6 +1,6 @@
 #include <cstdio>
 
-#include "..\Include\Conex.hpp"
+#include "..\Include\conex.hpp"
 
 bool is_page_aligned_address(std::span<const uint8_t> bytes) {
 	uint64_t addr;

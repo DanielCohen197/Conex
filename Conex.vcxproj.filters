@@ -11,12 +11,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Example\ConexExample.cpp">
+    <ClCompile Include="Example\conex_example.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Include\Conex.hpp">
+    <ClInclude Include="Include\conex.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

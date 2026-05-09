@@ -168,3 +168,5 @@ for (auto& capture : result.captures[1]) { // group 1 = (c1:4)*
     printf("record at offset %zu: 0x%08X\n", capture.offset, val);
 }
 ```
+
+For more examples, checkout the examples file.
