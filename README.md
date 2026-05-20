@@ -116,7 +116,7 @@ struct Capture {
 
 ---
 
-## Example
+## Examples
 
 Find a struct in a binary blob by its signature and a page aligned address member:
 
