@@ -1,13 +1,16 @@
 # Conex
 
-A C++ single-header library for condition-based binary pattern matching.
+[![CI](https://github.com/DanielCohen197/Conex/actions/workflows/ci.yml/badge.svg)](https://github.com/DanielCohen197/Conex/actions/workflows/ci.yml)
+![Header-only](https://img.shields.io/badge/header--only-single%20file-blue)
+![C++20](https://img.shields.io/badge/C%2B%2B-20-blue)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
-Conex lets you search binary data using a regex-style pattern syntax where each group is defined by a condition — a lambda that inspects the raw bytes and returns true or false.
+Binary pattern matching usually means hard-coded byte signatures. Conex lets you express match conditions as lambdas instead — find structures by semantics, not magic bytes.
 
 ```cpp
-auto result = conex::search_first(blob, "(c0:4)(c1:8)",
+auto result = conex::search_first(blob, "(c0:4)(c1:8)*",
     [](std::span<const uint8_t> s) { /* signature check */ },
-    [](std::span<const uint8_t> s) { /* address check */   }
+    [](std::span<const uint8_t> s) { /* page-aligned address */ }
 );
 ```
 
@@ -22,7 +25,7 @@ auto result = conex::search_first(blob, "(c0:4)(c1:8)",
 
 ## Installation
 
-Copy `conex.hpp` into your project and include it.
+Copy `Include/conex.hpp` into your project and include it.
 
 ```cpp
 #include "conex.hpp"
@@ -118,7 +121,7 @@ struct Capture {
 
 ## Examples
 
-Find a struct in a binary blob by its signature and a page aligned address member:
+Find a struct in a binary blob by its signature followed by any number of page-aligned addresses:
 
 ```cpp
 #include "conex.hpp"
@@ -126,12 +129,12 @@ Find a struct in a binary blob by its signature and a page aligned address membe
 bool is_page_aligned_address(std::span<const uint8_t> bytes) {
     uint64_t addr;
     std::memcpy(&addr, bytes.data(), 8);
-    return (addr & 0xFFF) == 0; // page-aligned
+    return (addr & 0xFFF) == 0;
 }
 
 auto result = conex::search_first(
     std::span(blob),
-    "(c0:4)(c1:8)",
+    "(c0:4)(c1:8)*",
 
     // c0: match the struct signature
     [](std::span<const uint8_t> s) {
@@ -140,7 +143,7 @@ auto result = conex::search_first(
         return sig == 0xDEADBEEF;
     },
 
-    // c1: match page aligned address condition
+    // c1: match page-aligned address
     [](std::span<const uint8_t> s) {
         return is_page_aligned_address(s);
     }
@@ -169,4 +172,4 @@ for (auto& capture : result.captures[1]) { // group 1 = (c1:4)*
 }
 ```
 
-For more examples, checkout the examples file.
+For more examples, see [Example/Example.cpp](Example/Example.cpp).
