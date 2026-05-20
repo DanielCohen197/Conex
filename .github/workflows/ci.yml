@@ -17,16 +17,16 @@ jobs:
         include:
           - os: ubuntu-latest
             compiler: g++
-            std: c++17
+            std: c++20
           - os: ubuntu-latest
             compiler: clang++
-            std: c++17
+            std: c++20
           - os: windows-latest
             compiler: msvc
-            std: c++17
+            std: c++20
           - os: macos-latest
             compiler: clang++
-            std: c++17
+            std: c++20
  
     steps:
       - name: Checkout
@@ -49,6 +49,6 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          cl /std:c++17 /W4 /EHsc Example\conex_example.cpp /Fe:conex_example.exe
+          cl /std:c++20 /W4 /EHsc Example\conex_example.cpp /Fe:conex_example.exe
           conex_example.exe
  
