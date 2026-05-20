@@ -15,7 +15,7 @@ auto result = conex::search_first(blob, "(c0:4)(c1:8)",
 
 ## Requirements
 
-- C++17 or later
+- C++20 or later
 - No dependencies beyond the standard library
 
 ---
